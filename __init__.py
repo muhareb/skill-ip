@@ -14,12 +14,14 @@
 #
 import time
 import os
+import re
 from ifaddr import get_adapters
 
 from adapt.intent import IntentBuilder
 from mycroft.skills.core import MycroftSkill, intent_handler
 import mycroft.audio
 from subprocess import check_output, CalledProcessError
+from mycroft.util.format import nice_number, pronounce_number
 
 
 def get_ifaces(ignore_list=None):
@@ -85,9 +87,41 @@ class IPSkill(MycroftSkill):
             self.enclosure.deactivate_mouth_events()
             iface, ip = addr.popitem()
             self.enclosure.mouth_text(ip)
-            ip_spoken = ip.replace(".", " "+dot+" ")
+            #ip_spoken = ip.replace(".", dot)
+            ip_spoken = ip
+            ip_spoken_ = ""
+            n = ''
+            i = 0
+            
+            ip_spoken = ip_spoken.strip()
+            length = len(ip_spoken)
+            for num in ip_spoken:
+                i= i+1
+                
+                if not num == ".":
+                    
+                    n = n+ num
+                                        
+                else:
+                    
+                   parsedn = pronounce_number(int(n),self.lang)
+                   ip_spoken_ += " " + parsedn + " " + "نقطه"
+
+                   n=""
+
+                if i == int(length):
+                    parsedn = pronounce_number(int(n),self.lang)
+                    ip_spoken_ += " " + parsedn
+               
+
+
+                    
+              
+                    
+            
+            
             self.speak_dialog("my address is",
-                              {'ip': ip_spoken})
+                              {'ip': ip_spoken_})
             time.sleep((self.LETTERS_PER_SCREEN + len(ip)) *
                        self.SEC_PER_LETTER)
         else:
@@ -96,6 +130,7 @@ class IPSkill(MycroftSkill):
                 ip = addr[iface]
                 self.enclosure.mouth_text(ip)
                 ip_spoken = ip.replace(".", " " + dot + " ")
+                
                 self.speak_dialog("my address on X is Y",
                                   {'interface': iface, 'ip': ip_spoken})
                 time.sleep((self.LETTERS_PER_SCREEN + len(ip)) *
@@ -156,7 +191,7 @@ class IPSkill(MycroftSkill):
     def speak_last_digits(self, ip):
         ip_end = ip.split(".")[-1]
         self.enclosure.mouth_text(ip_end)
-        self.speak_dialog("last digits", data={"digits": ip_end})
+        self.speak_dialog("last digits", data={"digits": pronounce_number(int(ip_end))})
         time.sleep(3)  # Show for at least 3 seconds
         mycroft.audio.wait_while_speaking()
 
